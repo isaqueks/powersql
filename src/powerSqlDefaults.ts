@@ -1,54 +1,60 @@
 import { PowerSQLStatement, PowerSQLStatementFactory } from './powerSqlStatement';
 import { PowerSQLTable } from './table';
 
-function _sqlCompare(args: string[]): string[] {
+function _sqlCompare(...args: string[]): string[] {
 
-	if (args.length !== 2) {
+	if (!args || args.length != 2) {
 		throw new Error(`2 arguments expected, ${args} received!`);
 	}
+
+    if (typeof args[0] === undefined) {
+        throw new Error(`Arg 0 is undefined!`);
+    }
+
+    if (typeof args[1] === undefined) {
+        throw new Error(`Arg 1 is undefined!`);
+    }
 
 	return args;
 
 }
 
-function _getArrayOfStringsExecutor(maxLength: number | undefined = undefined) {
-	return function (args: string[] | string): string[] {
+function _getArrayOfStringsExecutor(minLength: number | undefined = undefined, maxLength: number | undefined = undefined) {
+	return function (...args: string[]): string[] {
 		
-		const asArray = Array.isArray(args) ? args : [args];
-
-		if (maxLength && args.length > maxLength) {
-			throw new Error(`${maxLength} arguments expected! ${args.length} received!`);
+		if ((minLength !== undefined && args.length < minLength) ||
+            (maxLength !== undefined && args.length > maxLength)) {
+			throw new Error(`${minLength||0} - ${maxLength} arguments expected! ${args.length} received!`);
 		}
 
-		return asArray;
+		return args;
 	}
 }
 
-const select = PowerSQLStatementFactory('SELECT $', (args: string[] | undefined) => {
-    const arr = (args || ['*']);
+const select = PowerSQLStatementFactory('SELECT $', (...args: string[]) => {
+    const arr = ((!args || args.length === 0) ? ['*'] : args);
 
-    
 	return arr.join(', ');
-    
 });
 
-const from = PowerSQLStatementFactory('FROM $', (args: PowerSQLTable | PowerSQLTable[]) => {
-    if (Array.isArray(args) && args.length === 1)
-        args = args[0];
+const from = PowerSQLStatementFactory('FROM $', (args: PowerSQLTable) => {
+    
+    if (!args) {
+        throw new Error('Invalid table!');
+    }
 
-    return (args as PowerSQLTable).name;
+    return args.name;
 })
 
-const where = PowerSQLStatementFactory('WHERE $', (args: string | string[]) => {
-	if (Array.isArray(args)) {
-		const argsAsArray = args as string[];
-		return argsAsArray.join(' ');
-	}
-	return args as string;
+const where = PowerSQLStatementFactory('WHERE $', (whereCond: string) => {
+    if (typeof whereCond !== 'string') {
+        throw new Error(`string expected! ${typeof whereCond} (${whereCond}) received!`);
+    }
+	return whereCond;
 });
 
 const createTable = PowerSQLStatementFactory('CREATE TABLE IF NOT EXISTS $ ($)',
-([table]: PowerSQLTable[]) => {
+(table: PowerSQLTable) => {
     let tableColumns = '';
 
     let i = 0;
@@ -61,11 +67,18 @@ const createTable = PowerSQLStatementFactory('CREATE TABLE IF NOT EXISTS $ ($)',
     return [table.name, tableColumns.trim()];
 });
 
-const insertInto = PowerSQLStatementFactory('INSERT INTO $ ($) VALUES($)', 
-(table: PowerSQLTable, object: any, validate: Boolean = true) => {
+const insertInto = PowerSQLStatementFactory('INSERT INTO $ ($) VALUES ($)', 
+(table: PowerSQLTable, objectToInsert: any, validate: Boolean = true) => {
 
-    console.log(table, object, validate);
+    if (!(table instanceof PowerSQLTable)) {
+        throw new Error(`PowerSQLTable expected! ${typeof table} received!`);
+    }
+
+    if (typeof objectToInsert != 'object') {
+        throw new Error(`Object expected! ${typeof objectToInsert} received!`);
+    }
     
+
 
     const typesPair: any = {
         'number': [
@@ -111,10 +124,10 @@ const insertInto = PowerSQLStatementFactory('INSERT INTO $ ($) VALUES($)',
     let i = 0;
     for (let column of table.columns) {
 
-        let val: any = object[column.name];
+        let val: any = objectToInsert[column.name];
         let upType = column.type.toUpperCase();
         if (upType.includes('(')) {
-            upType = upType.substring(0, upType.indexOf('(')-1).trim();
+            upType = upType.substring(0, upType.indexOf('(')).trim();
         }
 
         if (val === undefined) {
@@ -167,10 +180,16 @@ const lowerEqual = PowerSQLStatementFactory('$ <= $', _sqlCompare);
 const like = PowerSQLStatementFactory('$ LIKE $', _sqlCompare);
 
 
-const and = PowerSQLStatementFactory('AND $', _getArrayOfStringsExecutor(1));
-const or = PowerSQLStatementFactory('OR $', _getArrayOfStringsExecutor(1));
+const and = PowerSQLStatementFactory('AND $', _getArrayOfStringsExecutor(1, 1));
+const or = PowerSQLStatementFactory('OR $', _getArrayOfStringsExecutor(1, 1));
 
-const group = PowerSQLStatementFactory('($)', _getArrayOfStringsExecutor());
+const group = PowerSQLStatementFactory('($)', (...args) => {
+    if (!args || args.length <= 0) {
+        throw new Error(`At least 1 arg expected!`);
+    }
+    
+    return args.join(' ');
+});
 
 // const PowerSQLDefaults = {
 // 	select: _selectStatement,

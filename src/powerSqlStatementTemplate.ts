@@ -8,7 +8,7 @@ class PowerSQLStatementTemplate {
 		this.execute = Execute;
 	}
 
-	toSql(): string {
+	toSql(...args): string {
 
 		let sqlItems: string[] | string = this.execute.apply(this, arguments);
 		if (!Array.isArray(sqlItems)) {
@@ -23,7 +23,7 @@ class PowerSQLStatementTemplate {
 			result += templateItem + (i <= sqlItems.length - 1 ? sqlItems[i++] : '');
 		}
 
-		return `${result} `;
+		return result;
 	}
 }
 
