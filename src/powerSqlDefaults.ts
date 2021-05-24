@@ -1,4 +1,5 @@
 import { PowerSQLStatement, PowerSQLStatementFactory } from './powerSqlStatement';
+import sqlTypes from './sqlTypes';
 import { PowerSQLTable } from './table';
 
 function _sqlCompare(...args: string[]): string[] {
@@ -77,46 +78,6 @@ const insertInto = PowerSQLStatementFactory('INSERT INTO $ ($) VALUES ($)',
     if (typeof objectToInsert != 'object') {
         throw new Error(`Object expected! ${typeof objectToInsert} received!`);
     }
-    
-
-
-    const typesPair: any = {
-        'number': [
-            'INT',
-            'TINYINT',
-            'SMALLINT',
-            'MEDIUMINT',
-            'BIGINT',
-            'INTEGER',
-            'FLOAT',
-            'DOUBLE',
-            'DOUBLE PRECISION',
-            'DECIMAL',
-            'DEC',
-            'BIT'
-        ],
-        'boolean': [
-            'BIT',
-            'BOOL',
-            'BOOLEAN',
-        ],
-        'string': [
-            'CHAR',
-            'VARCHAR',
-            'BINARY',
-            'VARBINARY',
-            'TINYTEXT',
-            'MEDIUMTEXT',
-            'LONGTEXT',
-            'TEXT',
-        ],
-        'object': [
-            'BLOB',
-            'TINYBLOB',
-            'MEDIUMBLOB',
-            'LONGBLOB'
-        ]
-    };
 
     let values = '';
     let sequence = '';
@@ -141,13 +102,13 @@ const insertInto = PowerSQLStatementFactory('INSERT INTO $ ($) VALUES ($)',
             }
             else if (val !== null) {
 
-                const type: string = typeof val;
-                const sqlType: string[] = typesPair[type];
+                const jsType: string = typeof val;
+                const sqlType: string[] | null = sqlTypes.getSqlTypes(jsType);
                 if (!sqlType) {
-                    throw new Error(`Invalid type: ${type}!`);
+                    throw new Error(`Invalid type: ${jsType}!`);
                 }
                 if (sqlType.indexOf(upType) === -1) {
-                    throw new Error(`Type conflict! ${sqlType} expected, ${upType} (JS: ${type} ${val}) received!`);
+                    throw new Error(`Type conflict! ${sqlType} expected, ${upType} (JS: ${jsType} ${val}) received!`);
                 }
 
             }
@@ -189,6 +150,19 @@ const group = PowerSQLStatementFactory('($)', (...args) => {
     }
     
     return args.join(' ');
+});
+
+const param = PowerSQLStatementFactory('$', (...args) => {
+    const [paramValue, paramSQLType] = args;
+    let jsType;
+    if (paramSQLType) {
+        jsType = sqlTypes.getJsType(paramSQLType);
+    }
+    else {
+        jsType = typeof(paramValue);
+    }
+
+    return sqlTypes.sqlEscapeToString(paramValue, jsType);
 });
 
 // const PowerSQLDefaults = {
@@ -239,7 +213,8 @@ const PowerSQLDefaults = {
     and,
     or,
 
-    group
+    group,
+    param
 }
 
 export default PowerSQLDefaults;
