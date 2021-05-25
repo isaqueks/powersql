@@ -3,7 +3,7 @@ import SqlDefaults from "./src/powerSqlDefaults";
 import sqlTypes from "./src/sqlTypes";
 import { PowerSQLTable, PowerSQLTableColumn } from "./src/table";
 
-const final = {
+const power = {
     PowerSQL,
     PowerSQLDefaults: SqlDefaults,
     PowerSQLTypes: sqlTypes,
@@ -11,4 +11,4 @@ const final = {
     PowerSQLTableColumn: PowerSQLTableColumn
 }
 
-export { final as PowerSQL };
+export default power;
