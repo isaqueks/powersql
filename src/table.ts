@@ -31,6 +31,26 @@ class PowerSQLTable {
 		this.name = Name;
 		this.columns = Columns;
 	}
+
+    getColumn(columnName: string): PowerSQLTableColumn | null {
+        if (columnName == undefined) {
+            throw new Error('columnName expected! undefined received.');
+        }
+        for (let column of this.columns) {
+            if (column.name === columnName) {
+                return column;
+            }
+        }
+        return null;
+    }
+
+    hasColumn(columnName: string, type: string | undefined = undefined) {
+        const col = this.getColumn(columnName);
+        if (col && (type === undefined || col.type == type)) {
+            return true;
+        }
+        return false;
+    }
 }
 
 export { PowerSQLTable, PowerSQLTableColumn };

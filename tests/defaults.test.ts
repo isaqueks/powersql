@@ -108,3 +108,37 @@ test('(Group)', () => {
     expect(() => psql.group()).toThrowError();
 
 })
+
+test('(Param)', () => {
+
+    expect(psql.param('hello world')).toEqual("'hello world'");
+    expect(psql.param(46)).toEqual('46');
+    expect(psql.param(46, 'TEXT')).toEqual("'46'");
+
+    expect(() => psql.param('hello world', 'inexistent sql type')).toThrowError();
+    expect(() => psql.param()).toThrowError();
+
+})
+
+test('(SelectObject)', () => {
+
+    const demoObject = {
+        name: 'John'
+    }
+
+    const demoObject2 = {
+        id: 5,
+        name: 'Rose'
+    }
+
+    const errorObject = {
+        inexistentColumn: 10
+    }
+
+    expect(psql.selectObject(testTable, demoObject)).toEqual("SELECT * FROM testTable WHERE name = 'John'");
+    expect(psql.selectObject(testTable, demoObject2)).toEqual("SELECT * FROM testTable WHERE id = 5 AND name = 'Rose'");
+
+    expect(() => psql.selectObject()).toThrowError();
+    expect(() => psql.selectObject(testTable, errorObject)).toThrowError();
+
+})

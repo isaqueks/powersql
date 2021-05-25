@@ -129,6 +129,28 @@ const insertInto = PowerSQLStatementFactory('INSERT INTO $ ($) VALUES ($)',
 
 });
 
+const selectObject = PowerSQLStatementFactory('SELECT * FROM $ WHERE $', (table: PowerSQLTable, desiredObject: any) => {
+    if (!table || !desiredObject) {
+        throw new Error('Table and desired object expected!');
+    }
+
+    let whereConditions = [];    
+
+    for (let columnName in desiredObject) {
+        const columnValue = desiredObject[columnName];
+
+        const column = table.getColumn(columnName);
+        if (!table) {
+            throw new Error(`Column "${columnName}" does not exists at table ${table.name}!`);
+        }
+        
+        whereConditions.push(equal(column.name, param(columnValue, column.type)));
+    }
+
+    return [table.name, whereConditions.join(' AND ')];
+
+});
+
 const equal = PowerSQLStatementFactory('$ = $', _sqlCompare);
 const notEqual = PowerSQLStatementFactory('$ <> $', _sqlCompare);
 
@@ -198,6 +220,7 @@ const PowerSQLDefaults = {
     from,
     insertInto,
     createTable,
+    selectObject,
 
     equal,
     notEqual,

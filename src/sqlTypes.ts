@@ -47,6 +47,10 @@ function getJsType(sqlType: string): string | null {
     if (sqlType === undefined) {
         throw new Error('sqlType is undefined! String expected!');
     }
+    if (sqlType.includes('(')) {
+        // example: VARCHAR(something)
+        sqlType = sqlType.substring(0, sqlType.indexOf('(')).trim();
+    }
     for (let jsType in typesPair) {
         const sqlTypes: string[] = typesPair[jsType];
         

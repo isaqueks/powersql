@@ -32,4 +32,13 @@ test('Table columns', () => {
     expect(table.columns[0].attributes.length).toBe(2);
     expect(table.columns[1].attributes.length).toBe(1);
 
+    expect(table.getColumn('id').type).toEqual('INTEGER');
+    expect(table.getColumn('inexistent')).toBe(null);
+
+    expect(table.hasColumn('id')).toBe(true);
+    expect(table.hasColumn('id', 'INTEGER')).toBe(true);
+    expect(table.hasColumn('id', 'STRING')).toBe(false);
+
+    expect(() => table.getColumn(undefined)).toThrowError();
+
 });
