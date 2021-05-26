@@ -108,8 +108,10 @@ const insertInto = PowerSQLStatementFactory('INSERT INTO $ ($) VALUES ($)',
                     throw new Error(`Invalid type: ${jsType}!`);
                 }
                 if (sqlType.indexOf(upType) === -1) {
-                    throw new Error(`Type conflict! ${sqlType} expected, ${upType} (JS: ${jsType} ${val}) received!`);
+                    throw new Error(`Type conflict at ${column.name}! ${sqlType} expected, ${upType} (JS: ${jsType} ${val}) received!`);
                 }
+
+                val = param(val);
 
             }
             else if (val === null) {
