@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "TypeScript SQL Builder",
   "main": "index.ts",
+  "type": "commonjs",
   "scripts": {
     "start": "ts-node index.ts",
     "test": "jest",

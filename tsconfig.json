@@ -9,9 +9,13 @@
       "strictNullChecks": false,
       "noImplicitAny": false,
       "noImplicitThis": false,
-      "declaration": true
+      "declaration": true,
     },
     "exclude": [
-        "tests"
+        "routes"
+    ],
+    "include":[
+        "*.ts",
+        "!*.d.ts"
     ]
 }
