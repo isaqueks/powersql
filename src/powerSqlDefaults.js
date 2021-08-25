@@ -56,6 +56,31 @@ const where = powerSqlStatement_1.PowerSQLStatementFactory('WHERE $', (whereCond
     return whereCond;
 });
 /**
+ * UPDATE `table`
+ * @param {PowerSQLTable} table - The table to update
+ */
+const update = powerSqlStatement_1.PowerSQLStatementFactory('UPDATE $', (table) => {
+    if (!table) {
+        throw new Error('Invalid table!');
+    }
+    return table.name;
+});
+/**
+ * SET `data`
+ * @param {any} data - The data to set
+ */
+const set = powerSqlStatement_1.PowerSQLStatementFactory('SET $', (modify) => {
+    let code = [];
+    if (!modify) {
+        throw new Error('Cannot modify null!');
+    }
+    for (let column in modify) {
+        let value = param(modify[column]);
+        code.push(`${column} = ${value}`);
+    }
+    return code.join(', ');
+});
+/**
  * CREATE TABLE IF NOT EXISTS `table` (`tableColumns`)
  * @param PowerSQLTable The table to create
  */
@@ -176,6 +201,8 @@ const PowerSQLDefaults = {
     insertInto,
     createTable,
     selectObject,
+    update,
+    set,
     equal,
     notEqual,
     higher,

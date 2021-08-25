@@ -6,6 +6,8 @@ declare const PowerSQLDefaults: {
     insertInto: PowerSQLStatement;
     createTable: PowerSQLStatement;
     selectObject: PowerSQLStatement;
+    update: PowerSQLStatement;
+    set: PowerSQLStatement;
     equal: PowerSQLStatement;
     notEqual: PowerSQLStatement;
     higher: PowerSQLStatement;
