@@ -60,7 +60,7 @@ test('INSERT INTO', () => {
         name: 5
     };
 
-    expect(psql.insertInto(testTable, dataToInsert_01)).toEqual('INSERT INTO testTable (id, name) VALUES (1, John)');
+    expect(psql.insertInto(testTable, dataToInsert_01)).toEqual('INSERT INTO testTable (id, name) VALUES (1, \'John\')');
     expect(psql.insertInto(testTable, dataToInsert_03)).toEqual('INSERT INTO testTable (id) VALUES (1)');
     
     expect(() => psql.insertInto()).toThrowError();

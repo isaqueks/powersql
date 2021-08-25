@@ -8,6 +8,10 @@
       "strict": true,
       "strictNullChecks": false,
       "noImplicitAny": false,
-      "noImplicitThis": false
-    }
-  }
+      "noImplicitThis": false,
+      "declaration": true
+    },
+    "exclude": [
+        "tests"
+    ]
+}

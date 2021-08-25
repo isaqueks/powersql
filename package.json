@@ -6,7 +6,8 @@
   "scripts": {
     "start": "ts-node index.ts",
     "test": "jest",
-    "coverage": "jest --coverage"
+    "coverage": "jest --coverage",
+    "build": "tsc"
   },
   "author": "Isaque K",
   "license": "ISC",

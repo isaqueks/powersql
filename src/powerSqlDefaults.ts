@@ -32,12 +32,20 @@ function _getArrayOfStringsExecutor(minLength: number | undefined = undefined, m
 	}
 }
 
+/**
+ * Select what (or '*')
+ * @param string what to select - Optional 
+ */
 const select = PowerSQLStatementFactory('SELECT $', (...args: string[]) => {
     const arr = ((!args || args.length === 0) ? ['*'] : args);
 
 	return arr.join(', ');
 });
 
+/**
+ * FROM table
+ * @param PowerSQLTable The table to select from
+ */
 const from = PowerSQLStatementFactory('FROM $', (args: PowerSQLTable) => {
     
     if (!args) {
@@ -47,6 +55,10 @@ const from = PowerSQLStatementFactory('FROM $', (args: PowerSQLTable) => {
     return args.name;
 })
 
+/**
+ * WHERE condition
+ * @param string condition
+ */
 const where = PowerSQLStatementFactory('WHERE $', (whereCond: string) => {
     if (typeof whereCond !== 'string') {
         throw new Error(`string expected! ${typeof whereCond} (${whereCond}) received!`);
@@ -54,6 +66,10 @@ const where = PowerSQLStatementFactory('WHERE $', (whereCond: string) => {
 	return whereCond;
 });
 
+/**
+ * CREATE TABLE IF NOT EXISTS `table` (`tableColumns`)
+ * @param PowerSQLTable The table to create 
+ */
 const createTable = PowerSQLStatementFactory('CREATE TABLE IF NOT EXISTS $ ($)',
 (table: PowerSQLTable) => {
     let tableColumns = '';
@@ -68,6 +84,12 @@ const createTable = PowerSQLStatementFactory('CREATE TABLE IF NOT EXISTS $ ($)',
     return [table.name, tableColumns.trim()];
 });
 
+/**
+ * INSERT INTO `table` VALUES (`object`)
+ * @param PowerSQLTable The table to insert data
+ * @param any The object to insert into the table
+ * @param boolean Optional (default: true) Validate types
+ */
 const insertInto = PowerSQLStatementFactory('INSERT INTO $ ($) VALUES ($)', 
 (table: PowerSQLTable, objectToInsert: any, validate: Boolean = true) => {
 
@@ -131,6 +153,11 @@ const insertInto = PowerSQLStatementFactory('INSERT INTO $ ($) VALUES ($)',
 
 });
 
+/**
+ * SELECT * FROM `table` WHERE `keysToMatch`
+ * @param PowerSQLTable The table to select from
+ * @param any The desired object to match with the column values
+ */
 const selectObject = PowerSQLStatementFactory('SELECT * FROM $ WHERE $', (table: PowerSQLTable, desiredObject: any) => {
     if (!table || !desiredObject) {
         throw new Error('Table and desired object expected!');
@@ -188,33 +215,6 @@ const param = PowerSQLStatementFactory('$', (...args) => {
 
     return sqlTypes.sqlEscapeToString(paramValue, jsType);
 });
-
-// const PowerSQLDefaults = {
-// 	select: _selectStatement,
-// 	where: _whereStatement,
-
-//     insertInto: _insertInto,
-//     createTable: _createTable,
-
-// 	equal: _equalOperator,
-// 	notEqual: _notEqualOperator,
-
-// 	higher: _higherOperator,
-// 	lower: _lowerOperator,
-
-// 	higherOrEqual: _highOrEqualOperator,
-// 	lowerOrEqual: _lowerOrEqualOperator,
-
-//     like: _likeOperator,
-
-// 	and: _sqlAndOperator,
-// 	or: _sqlOrOperator,
-
-// 	group: _sqlGroup
-
-// }
-
-// export default PowerSQLDefaults;
 
 const PowerSQLDefaults = { 
     select,
