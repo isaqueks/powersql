@@ -1,0 +1,14 @@
+{
+  "name": "powersql",
+  "version": "1.0.0",
+  "description": "Pure SQL Builder for NodeJS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "sql"
+  ],
+  "author": "isaqueks",
+  "license": "MIT"
+}
