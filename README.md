@@ -3,7 +3,8 @@ Pure depedency-less NodeJS Type-safe SQL query bulder
 <hr>
 
 ## Installation
-We don't have a package at npm registry yet, but you can install it from GitHub: `npm i https://github.com/isaqueks/powersql.git#release`  
+We don't have a package at npm registry yet, but you can install it from GitHub:   
+`npm i https://github.com/isaqueks/powersql.git#release`  
 (You can remove the `#release` if you want the pure TypeScript development version)  
 <hr>
 
