@@ -6,7 +6,6 @@ import { PowerSQLTable, PowerSQLTableColumn } from "./src/table";
 import PowerSQLStatementTemplate from "./src/powerSqlStatementTemplate";
 import { PowerSQLStatementFactory, PowerSQLStatement } from "./src/powerSqlStatement";
 
-
 export {
     PowerSQL,
     PowerSQLDefaults,
