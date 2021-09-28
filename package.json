@@ -1,6 +1,6 @@
 {
   "name": "powersql",
-  "version": "1.0.0",
+  "version": "2.0.1",
   "description": "TypeScript SQL Builder",
   "main": "index.ts",
   "type": "commonjs",

@@ -1,14 +1,19 @@
-import PowerSQLStatementResult from "./powerSqlStatementResult";
+import PowerSQLStatementResult, { MultipleStatements } from "./powerSqlStatementResult";
 
-function PowerSQL(...statements: PowerSQLStatementResult[]): [ string, Array<any> ] {
+function PowerSQL(...statements: MultipleStatements): [ string, Array<any> ] {
 
     const resultSQL = [];
     const resultParams = [];
 
     for (const statement of statements) {
-        const [ sql, params ] = statement;
-        resultSQL.push(sql);
-        params?.forEach(param => resultParams.push(param));
+        if (typeof statement === 'string') {
+            resultParams.push(statement);
+        }
+        else if (typeof statement === 'object') {
+            const [ sql, params ] = statement;
+            resultSQL.push(sql);
+            params?.forEach(param => resultParams.push(param));
+        }
     }
 
     return [ resultSQL.join(' ').concat(';'), resultParams ];

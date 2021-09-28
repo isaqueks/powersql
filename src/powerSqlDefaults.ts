@@ -1,7 +1,6 @@
 import { PowerSQLTable } from '..';
-import PowerSQLStatementResult, { Param, SQL } from './powerSqlStatementResult'
+import PowerSQLStatementResult, { MultipleStatements, Param, SQL } from './powerSqlStatementResult'
 
-type MultipleStatements = PowerSQLStatementResult[] | string[] | Array<string | PowerSQLStatementResult>;
 
 interface PowerSQLDefaultsContainer {
     [fn: string]: (...any) => PowerSQLStatementResult;
