@@ -1,3 +1,3 @@
-import PowerSQLStatementResult from "./powerSqlStatementResult";
-declare function PowerSQL(...statements: PowerSQLStatementResult[]): [string, Array<any>];
+import { MultipleStatements } from "./powerSqlStatementResult";
+declare function PowerSQL(...statements: MultipleStatements): [string, Array<any>];
 export default PowerSQL;

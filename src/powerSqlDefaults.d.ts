@@ -1,6 +1,5 @@
 import { PowerSQLTable } from '..';
-import PowerSQLStatementResult from './powerSqlStatementResult';
-declare type MultipleStatements = PowerSQLStatementResult[] | string[] | Array<string | PowerSQLStatementResult>;
+import PowerSQLStatementResult, { MultipleStatements } from './powerSqlStatementResult';
 interface PowerSQLDefaultsContainer {
     [fn: string]: (...any: any[]) => PowerSQLStatementResult;
 }
