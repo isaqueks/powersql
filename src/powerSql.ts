@@ -7,7 +7,7 @@ function PowerSQL(...statements: MultipleStatements): [ string, Array<any> ] {
 
     for (const statement of statements) {
         if (typeof statement === 'string') {
-            resultParams.push(statement);
+            resultSQL.push(statement);
         }
         else if (typeof statement === 'object') {
             const [ sql, params ] = statement;
