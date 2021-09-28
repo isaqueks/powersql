@@ -9,9 +9,18 @@ class PowerSQLTableColumn {
         if (typeof Type != 'string' || !Type) {
             throw new Error(`Expected a valid type! ${Type} received.`);
         }
-        this.name = Name;
-        this.type = Type;
-        this.attributes = Attributes;
+        this._name = Name;
+        this._type = Type;
+        this._attributes = Attributes;
+    }
+    get name() {
+        return this._name;
+    }
+    get type() {
+        return this._type;
+    }
+    get attributes() {
+        return this._attributes;
     }
 }
 exports.PowerSQLTableColumn = PowerSQLTableColumn;
@@ -23,14 +32,20 @@ class PowerSQLTable {
         if (!Columns || Columns.length <= 0) {
             throw new Error('At least 1 column expected!');
         }
-        this.name = Name;
-        this.columns = Columns;
+        this._name = Name;
+        this._columns = Columns;
+    }
+    get name() {
+        return this._name;
+    }
+    get columns() {
+        return this._columns;
     }
     getColumn(columnName) {
         if (columnName == undefined) {
             throw new Error('columnName expected! undefined received.');
         }
-        for (let column of this.columns) {
+        for (let column of this._columns) {
             if (column.name === columnName) {
                 return column;
             }

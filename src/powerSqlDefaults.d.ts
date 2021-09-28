@@ -1,23 +1,35 @@
-import { PowerSQLStatement } from './powerSqlStatement';
-declare const PowerSQLDefaults: {
-    select: PowerSQLStatement;
-    where: PowerSQLStatement;
-    from: PowerSQLStatement;
-    insertInto: PowerSQLStatement;
-    createTable: PowerSQLStatement;
-    selectObject: PowerSQLStatement;
-    update: PowerSQLStatement;
-    set: PowerSQLStatement;
-    equal: PowerSQLStatement;
-    notEqual: PowerSQLStatement;
-    higher: PowerSQLStatement;
-    lower: PowerSQLStatement;
-    higherEqual: PowerSQLStatement;
-    lowerEqual: PowerSQLStatement;
-    like: PowerSQLStatement;
-    and: PowerSQLStatement;
-    or: PowerSQLStatement;
-    group: PowerSQLStatement;
-    param: PowerSQLStatement;
-};
+import { PowerSQLTable } from '..';
+import PowerSQLStatementResult from './powerSqlStatementResult';
+declare type MultipleStatements = PowerSQLStatementResult[] | string[] | Array<string | PowerSQLStatementResult>;
+interface PowerSQLDefaultsContainer {
+    [fn: string]: (...any: any[]) => PowerSQLStatementResult;
+}
+declare class PowerSQLDefaults implements PowerSQLDefaultsContainer {
+    [fn: string]: (...any: any[]) => PowerSQLStatementResult;
+    static select(...items: string[]): PowerSQLStatementResult;
+    static selectWhere(table: PowerSQLTable, values: {
+        [column: string]: any;
+    }): PowerSQLStatementResult;
+    static from(table: PowerSQLTable): PowerSQLStatementResult;
+    static where(...conditions: MultipleStatements): PowerSQLStatementResult;
+    static createTable(table: PowerSQLTable, sqlliteIfNotExists?: boolean): PowerSQLStatementResult;
+    static insertInto(table: PowerSQLTable, values: {
+        [column: string]: any;
+    }): PowerSQLStatementResult;
+    static delete(): PowerSQLStatementResult;
+    static update(table: PowerSQLTable): PowerSQLStatementResult;
+    static set(values: {
+        [column: string]: any;
+    }): PowerSQLStatementResult;
+    static group(...statements: MultipleStatements): PowerSQLStatementResult;
+    static equal(a: any, b: any): PowerSQLStatementResult;
+    static notEqual(a: any, b: any): PowerSQLStatementResult;
+    static higher(a: any, b: any): PowerSQLStatementResult;
+    static lower(a: any, b: any): PowerSQLStatementResult;
+    static higherEqual(a: any, b: any): PowerSQLStatementResult;
+    static lowerEqual(a: any, b: any): PowerSQLStatementResult;
+    static like(a: any, b: any): PowerSQLStatementResult;
+    static and(...statements: MultipleStatements): PowerSQLStatementResult;
+    static or(...statements: MultipleStatements): PowerSQLStatementResult;
+}
 export default PowerSQLDefaults;
