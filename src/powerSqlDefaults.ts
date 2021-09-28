@@ -1,280 +1,155 @@
-import { PowerSQLStatement, PowerSQLStatementFactory } from './powerSqlStatement';
-import sqlTypes from './sqlTypes';
-import { PowerSQLTable } from './table';
+import { PowerSQLTable } from '..';
+import PowerSQLStatementResult, { Param, SQL } from './powerSqlStatementResult'
 
-function _sqlCompare(...args: string[]): string[] {
+type MultipleStatements = PowerSQLStatementResult[] | string[] | Array<string | PowerSQLStatementResult>;
 
-	if (!args || args.length != 2) {
-		throw new Error(`2 arguments expected, ${args} received!`);
-	}
-
-    if (typeof args[0] === undefined) {
-        throw new Error(`Arg 0 is undefined!`);
-    }
-
-    if (typeof args[1] === undefined) {
-        throw new Error(`Arg 1 is undefined!`);
-    }
-
-	return args;
-
+interface PowerSQLDefaultsContainer {
+    [fn: string]: (...any) => PowerSQLStatementResult;
 }
 
-function _getArrayOfStringsExecutor(minLength: number | undefined = undefined, maxLength: number | undefined = undefined) {
-	return function (...args: string[]): string[] {
-		
-		if ((minLength !== undefined && args.length < minLength) ||
-            (maxLength !== undefined && args.length > maxLength)) {
-			throw new Error(`${minLength||0} - ${maxLength} arguments expected! ${args.length} received!`);
-		}
+function unifyStatements(statements: MultipleStatements, join: string = ' '): PowerSQLStatementResult {
+    const sqls: SQL[] = [];
+    const params: Param[] = [];
 
-		return args;
-	}
+    for (const cond of statements) {
+        if (typeof cond === 'string') {
+            sqls.push(cond);
+        }
+        else if (typeof cond === 'object' && Array.isArray(cond) && cond.length === 2) {
+            const condAsResult = cond as PowerSQLStatementResult;
+            sqls.push(condAsResult[0].trim());
+            params.push(...condAsResult[1]);
+        }
+        else {
+            throw new Error(`Unknown statement: ${cond}.`);
+        }
+    }
+   
+    return [`${sqls.join(join)}`, params];
 }
 
-/**
- * Select what (or '*')
- * @param string what to select - Optional 
- */
-const select = PowerSQLStatementFactory('SELECT $', (...args: string[]) => {
-    const arr = ((!args || args.length === 0) ? ['*'] : args);
 
-	return arr.join(', ');
-});
+class PowerSQLDefaults implements PowerSQLDefaultsContainer {
+    [fn: string]: (...any: any[]) => PowerSQLStatementResult;
 
-/**
- * FROM table
- * @param PowerSQLTable The table to select from
- */
-const from = PowerSQLStatementFactory('FROM $', (args: PowerSQLTable) => {
-    
-    if (!args) {
-        throw new Error('Invalid table!');
+    static select(...items: string[]): PowerSQLStatementResult {
+        return [`SELECT ${items.join(', ')}`];
     }
 
-    return args.name;
-})
+    static selectWhere(table: PowerSQLTable, values: { [column: string]: any }): PowerSQLStatementResult {
+        const conditions = [];
+        const params = [];
 
-/**
- * WHERE condition
- * @param string condition
- */
-const where = PowerSQLStatementFactory('WHERE $', (whereCond: string) => {
-    if (typeof whereCond !== 'string') {
-        throw new Error(`string expected! ${typeof whereCond} (${whereCond}) received!`);
-    }
-	return whereCond;
-});
-
-/**
- * UPDATE `table`
- * @param {PowerSQLTable} table - The table to update
- */
-const update = PowerSQLStatementFactory('UPDATE $', (table: PowerSQLTable) => {
-    
-    if (!table) {
-        throw new Error('Invalid table!');
-    }
-
-    return table.name;
-})
-
-/**
- * SET `data`
- * @param {any} data - The data to set
- */
-const set = PowerSQLStatementFactory('SET $', (modify: any) => {
-
-    let code = [];
-    if (!modify) {
-        throw new Error('Cannot modify null!');
-    }
-
-    for (let column in modify) {
-        let value = param(modify[column]);
-        code.push(`${column} = ${value}`);
-    }
-
-	return code.join(', ');
-});
-
-
-/**
- * CREATE TABLE IF NOT EXISTS `table` (`tableColumns`)
- * @param PowerSQLTable The table to create 
- */
-const createTable = PowerSQLStatementFactory('CREATE TABLE IF NOT EXISTS $ ($)',
-(table: PowerSQLTable) => {
-    let tableColumns = '';
-
-    let i = 0;
-    for (let column of table.columns) {
-        const coma = (++i >= table.columns.length ? '' : ', '); 
-        let attrs = column.attributes;
-        let attrsStr = attrs.length > 0 ? ' ' + attrs.join(' ') : '';
-        tableColumns += `${column.name} ${column.type}${attrsStr}${coma}`;
-    }
-    return [table.name, tableColumns.trim()];
-});
-
-/**
- * INSERT INTO `table` VALUES (`object`)
- * @param PowerSQLTable The table to insert data
- * @param any The object to insert into the table
- * @param boolean Optional (default: true) Validate types
- */
-const insertInto = PowerSQLStatementFactory('INSERT INTO $ ($) VALUES ($)', 
-(table: PowerSQLTable, objectToInsert: any, validate: Boolean = true) => {
-
-    if (!(table instanceof PowerSQLTable)) {
-        throw new Error(`PowerSQLTable expected! ${typeof table} received!`);
-    }
-
-    if (typeof objectToInsert != 'object') {
-        throw new Error(`Object expected! ${typeof objectToInsert} received!`);
-    }
-
-    let values = '';
-    let sequence = '';
-
-    let i = 0;
-    for (let column of table.columns) {
-
-        let val: any = objectToInsert[column.name];
-        let upType = column.type.toUpperCase();
-        if (upType.includes('(')) {
-            upType = upType.substring(0, upType.indexOf('(')).trim();
-        }
-
-        if (val === undefined) {
-            val = null;
-        }
-
-        if (validate) {
-            let attrs: string = column.attributes.join(' ').toUpperCase();
-            if (val === null && attrs.includes('NOT NULL')) {
-                throw new Error(`Null received at column ${column.name} [${attrs}] (Table ${table.name})!`);
-            }
-            else if (val !== null) {
-
-                const jsType: string = typeof val;
-                const sqlType: string[] | null = sqlTypes.getSqlTypes(jsType);
-                if (!sqlType) {
-                    throw new Error(`Invalid type: ${jsType}!`);
-                }
-                if (sqlType.indexOf(upType) === -1) {
-                    throw new Error(`Type conflict at ${column.name}! ${sqlType} expected, ${upType} (JS: ${jsType} ${val}) received!`);
-                }
-
-                val = param(val);
-
-            }
-            else if (val === null) {
+        for (const column in values) {
+            if (!table.hasColumn(column)) {
                 continue;
-                // If val is NULL and Table accepts it, just ignore ...
             }
+            conditions.push(`${column} = ?`);
+            params.push(values[column]);
         }
 
-        let coma = i > 0 ? ', ' : '';
-        sequence += `${coma}${column.name}`;
-        values += `${coma}${val}`;
-
-        i++;
+        return [`SELECT * FROM ${table.name} WHERE (${conditions.join(' AND ')})`, params];
     }
 
-    return [table.name, sequence.trim(), values.trim()];
-
-});
-
-/**
- * SELECT * FROM `table` WHERE `keysToMatch`
- * @param PowerSQLTable The table to select from
- * @param any The desired object to match with the column values
- */
-const selectObject = PowerSQLStatementFactory('SELECT * FROM $ WHERE $', (table: PowerSQLTable, desiredObject: any) => {
-    if (!table || !desiredObject) {
-        throw new Error('Table and desired object expected!');
+    static from(table: PowerSQLTable): PowerSQLStatementResult {
+        return [`FROM ${table.name}`];
     }
 
-    let whereConditions = [];    
+    static where(...conditions: MultipleStatements): PowerSQLStatementResult {
+        const [sql, params] = unifyStatements(conditions, ' ');
+        return [`WHERE ${sql}`, params];
 
-    for (let columnName in desiredObject) {
-        const columnValue = desiredObject[columnName];
+    }
 
-        const column = table.getColumn(columnName);
-        if (!table) {
-            throw new Error(`Column "${columnName}" does not exists at table ${table.name}!`);
+    static createTable(table: PowerSQLTable, sqlliteIfNotExists: boolean = false): PowerSQLStatementResult {
+        const tableColumns = [];
+        for (const column of table.columns) {
+            tableColumns.push(`${column.name} ${column.type} ${column.attributes.join(' ')}`);
         }
-        
-        whereConditions.push(equal(column.name, param(columnValue, column.type)));
+        return [`CREATE TABLE${sqlliteIfNotExists ? ' IF NOT EXISTS' : ''} ${table.name} (${tableColumns.join(', ').trim()})`];
     }
 
-    return [table.name, whereConditions.join(' AND ')];
+    static insertInto(table: PowerSQLTable, values: { [column: string]: any }): PowerSQLStatementResult {
 
-});
+        const params: Param[] = [];
+        const tableColumns = [];
 
-const equal = PowerSQLStatementFactory('$ = $', _sqlCompare);
-const notEqual = PowerSQLStatementFactory('$ <> $', _sqlCompare);
+        for (const columnName in values) {
+            if (!table.hasColumn(columnName)) {
+                continue;
+            }
+            tableColumns.push(columnName);
+            params.push(values[columnName]);
+        }
 
-const higher = PowerSQLStatementFactory('$ > $', _sqlCompare);
-const lower = PowerSQLStatementFactory('$ < $', _sqlCompare);
-
-const higherEqual = PowerSQLStatementFactory('$ >= $', _sqlCompare);
-const lowerEqual = PowerSQLStatementFactory('$ <= $', _sqlCompare);
-
-const like = PowerSQLStatementFactory('$ LIKE $', _sqlCompare);
-
-
-const and = PowerSQLStatementFactory('AND $', _getArrayOfStringsExecutor(1, 1));
-const or = PowerSQLStatementFactory('OR $', _getArrayOfStringsExecutor(1, 1));
-
-const group = PowerSQLStatementFactory('($)', (...args) => {
-    if (!args || args.length <= 0) {
-        throw new Error(`At least 1 arg expected!`);
-    }
-    
-    return args.join(' ');
-});
-
-const param = PowerSQLStatementFactory('$', (...args) => {
-    const [paramValue, paramSQLType] = args;
-    let jsType;
-    if (paramSQLType) {
-        jsType = sqlTypes.getJsType(paramSQLType);
-    }
-    else {
-        jsType = typeof(paramValue);
+        return [`INSERT INTO ${table.name} (${tableColumns.join(', ')}) VALUES (${tableColumns.map(x => '?').join(', ')})`, params];
     }
 
-    return sqlTypes.sqlEscapeToString(paramValue, jsType);
-});
+    static delete(): PowerSQLStatementResult {
+        return ['DELETE'];
+    }
 
-const PowerSQLDefaults = { 
-    select,
-    where,
-    from,
-    insertInto,
-    createTable,
-    selectObject,
-    update,
-    set,
+    static update(table: PowerSQLTable): PowerSQLStatementResult {
+        return [`UPDATE ${table.name}`];
+    }
 
-    equal,
-    notEqual,
+    static set(values: { [column: string]: any }): PowerSQLStatementResult {
+        const setStatements: SQL[] = [];
+        const params: Param[] = [];
 
-    higher,
-    lower,
+        for (const columnName in values) {
+            setStatements.push(`${columnName} = ?`);
+            params.push(values[columnName]);
+        }
 
-    higherEqual,
-    lowerEqual,
+        return [`SET ${setStatements.join(', ')}`, params];
+    }
 
-    like,
+    static group(...statements: MultipleStatements): PowerSQLStatementResult {
+        const [sql, params] = unifyStatements(statements);
+        return [`(${sql})`, params];
+    }
 
-    and,
-    or,
 
-    group,
-    param
-}
+    // Compare methods
+    static equal(a: any, b: any): PowerSQLStatementResult {
+        return [`${a} = ?`, [b]];
+    }
+
+    static notEqual(a: any, b: any): PowerSQLStatementResult {
+        return [`${a} <> ?`, [b]];
+    }
+
+    static higher(a: any, b: any): PowerSQLStatementResult {
+        return [`${a} > ?`, [b]];
+    }
+
+    static lower(a: any, b: any): PowerSQLStatementResult {
+        return [`${a} < ?`, [b]];
+    }
+
+    static higherEqual(a: any, b: any): PowerSQLStatementResult {
+        return [`${a} >= ?`, [b]];
+    }
+
+    static lowerEqual(a: any, b: any): PowerSQLStatementResult {
+        return [`${a} <= ?`, [b]];
+    }
+
+    static like(a: any, b: any): PowerSQLStatementResult {
+        return [`${a} LIKE ?`, [b]];
+    }
+
+    // AND / OR
+    static and(...statements: MultipleStatements): PowerSQLStatementResult {
+        const [sql, params] = unifyStatements(statements);
+        return [`AND (${sql})`, params];
+    }
+
+    static or(...statements: MultipleStatements): PowerSQLStatementResult {
+        const [sql, params] = unifyStatements(statements);
+        return [`OR (${sql})`, params];
+    }
+};
 
 export default PowerSQLDefaults;

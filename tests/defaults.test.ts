@@ -1,4 +1,4 @@
-import psql from "../src/powerSqlDefaults";
+import sql from "../src/powerSqlDefaults";
 import { PowerSQLTable, PowerSQLTableColumn } from "../src/table";
 
 const testTable = new PowerSQLTable('testTable', [
@@ -6,139 +6,121 @@ const testTable = new PowerSQLTable('testTable', [
     new PowerSQLTableColumn('name', 'VARCHAR(128)')
 ]);
 
-test('SELECT', () => {
-    expect(psql.select('x', 'y')).toEqual('SELECT x, y');
-    expect(psql.select()).toEqual('SELECT *');
+describe('PowerSQL Default methods', () => {
+
+    describe('CRUD, WHERE operation methods', () => {
+        
+        test('SELECT', () => {
+
+            expect(sql.select('id', 'name'))
+                .toEqual([ 'SELECT id, name' ]);
+
+            expect(sql.selectWhere(testTable, { id: 5, name: 'John' }))
+                .toEqual([ 'SELECT * FROM testTable WHERE (id = ? AND name = ?)', [ 5, 'John' ] ]);
+
+        });
+
+        test('FROM', () => {
+
+            expect(sql.from(testTable)).toEqual([ 'FROM testTable' ]);
+
+        });
+
+        test('WHERE', () => {
+
+            expect(sql.where('id = ?', 'AND', 'name = ? OR id > ?'))
+                .toEqual([ 'WHERE id = ? AND name = ? OR id > ?', [] ]);
+
+            expect(sql.where(
+                sql.equal('id', 5),
+                sql.or(
+                    sql.notEqual('name', 'John')
+                )
+            )).toEqual([ 'WHERE id = ? OR (name <> ?)', [ 5, 'John' ] ]);
+
+        });
+
+        test('CREATE TABLE', () => {
+
+            expect(sql.createTable(testTable))
+                .toEqual([`CREATE TABLE testTable (id INTEGER NOT NULL, name VARCHAR(128))`]);
+
+            expect(sql.createTable(testTable, true))
+                .toEqual([`CREATE TABLE IF NOT EXISTS testTable (id INTEGER NOT NULL, name VARCHAR(128))`]);
+
+        });
+
+        test('INSERT INTO', () => {
+
+            expect(sql.insertInto(testTable, {
+                id: 10,
+                name: 'John'
+            }))
+            .toEqual([`INSERT INTO testTable (id, name) VALUES (?, ?)`, [ 10, 'John' ]])
+
+        });
+
+        test('DELETE', () => {
+
+            expect(sql.delete())
+            .toEqual([`DELETE`])
+
+        });
+
+        test('UPDATE', () => {
+
+            expect(sql.update(testTable))
+            .toEqual([`UPDATE testTable`])
+
+        });
+
+        test('SET', () => {
+
+            expect(sql.set({
+                id: 12,
+                name: 'Isaque'
+            }))
+            .toEqual([`SET id = ?, name = ?`, [ 12, 'Isaque' ]])
+
+        });
+
+    });
+
+    describe('Comparing operations', () => {
+
+        test('Group (parenthesis)', () => {
+
+            expect(sql.group(
+                sql.like('name', 'Isaque'),
+                'AND',
+                sql.notEqual('id', 10)
+            ))
+            .toEqual([`(name LIKE ? AND id <> ?)`, [ 'Isaque', 10 ]])
+        });
+
+        test('Equal, notEqual, higher, lower, higherEqual, lowerEqual, like', () => {
+
+            expect(sql.equal('name', 'PowerSQL')).toEqual([ 'name = ?', [ 'PowerSQL' ] ]);
+            expect(sql.notEqual('name', 'PowerSQL')).toEqual([ 'name <> ?', [ 'PowerSQL' ] ]);
+
+            expect(sql.higher('name', 'PowerSQL')).toEqual([ 'name > ?', [ 'PowerSQL' ] ]);
+            expect(sql.lower('name', 'PowerSQL')).toEqual([ 'name < ?', [ 'PowerSQL' ] ]);
+
+            expect(sql.higherEqual('name', 'PowerSQL')).toEqual([ 'name >= ?', [ 'PowerSQL' ] ]);
+            expect(sql.lowerEqual('name', 'PowerSQL')).toEqual([ 'name <= ?', [ 'PowerSQL' ] ]);
+
+            expect(sql.like('name', 'PowerSQL')).toEqual([ 'name LIKE ?', [ 'PowerSQL' ] ]);
+
+        });
+
+        test('AND, OR', () => {
+            expect(sql.and(
+                'column = value', 'AND', 'x = y', 'OR',
+                sql.higherEqual('id', 12)
+            )).toEqual([ 'AND (column = value AND x = y OR id >= ?)', [12] ]);
+            expect(sql.or('condition')).toEqual([ 'OR (condition)', [] ]);
+        })
+
+    });
+
 });
-
-
-test('FROM', () => {
-    expect(psql.from(testTable)).toEqual('FROM testTable');
-    expect(() => psql.from(null)).toThrowError();
-});
-
-
-test('WHERE', () => {
-    expect(psql.where('y')).toEqual('WHERE y');
-
-    expect(() => psql.where(null)).toThrowError();
-    expect(() => psql.where(128)).toThrowError();
-});
-
-test('CREATE TABLE', () => {
-    expect(psql.createTable(testTable)).toEqual('CREATE TABLE IF NOT EXISTS testTable (id INTEGER NOT NULL, name VARCHAR(128))');
-    expect(() => psql.createTable(null)).toThrowError();
-});
-
-test('INSERT INTO', () => {
-
-    // Should work
-    const dataToInsert_01 = {
-        id: 1,
-        name: 'John'
-    };
-
-    // Shouldn't work (id = NOT NULL)
-    const dataToInsert_02 = {
-        name: 'John'
-    };
-
-    // Should work
-    const dataToInsert_03 = {
-        id: 1
-    };
-
-    // Should not work (id = INTEGER)
-    const dataToInsert_04 = {
-        id: '1',
-        name: 'John'
-    };
-
-    // Should not work (name = TEXT)
-    const dataToInsert_05 = {
-        id: 1,
-        name: 5
-    };
-
-    expect(psql.insertInto(testTable, dataToInsert_01)).toEqual('INSERT INTO testTable (id, name) VALUES (1, \'John\')');
-    expect(psql.insertInto(testTable, dataToInsert_03)).toEqual('INSERT INTO testTable (id) VALUES (1)');
-    
-    expect(() => psql.insertInto()).toThrowError();
-    expect(() => psql.insertInto(testTable, dataToInsert_02)).toThrowError();
-    expect(() => psql.insertInto(testTable, dataToInsert_04)).toThrowError();
-    expect(() => psql.insertInto(testTable, dataToInsert_05)).toThrowError();
-
-});
-
-test('Operators', () => {
-
-    function testOperator(fn, op) {
-        expect(fn('a', 'b')).toEqual(`a ${op} b`);
-        expect(() => fn()).toThrowError();
-        expect(() => fn('a')).toThrowError(); // 2 args expected!
-    }
-
-    testOperator(psql.equal, '=');
-    testOperator(psql.notEqual, '<>');
-
-    testOperator(psql.higher, '>');
-    testOperator(psql.lower, '<');
-
-    testOperator(psql.higherEqual, '>=');
-    testOperator(psql.lowerEqual, '<=');
-
-    testOperator(psql.like, 'LIKE');
-
-})
-
-test('Logical operators', () => {
-
-    function testOperator(fn, op) {
-        expect(fn('a')).toEqual(`${op} a`);
-        expect(() => fn()).toThrowError();
-    }
-
-   testOperator(psql.and, 'AND');
-   testOperator(psql.or, 'OR');
-})
-
-test('(Group)', () => {
-
-    expect(psql.group(psql.equal('x', 'y'), psql.and(psql.equal(10, 10)))).toEqual('(x = y AND 10 = 10)');
-    expect(() => psql.group()).toThrowError();
-
-})
-
-test('(Param)', () => {
-
-    expect(psql.param('hello world')).toEqual("'hello world'");
-    expect(psql.param(46)).toEqual('46');
-    expect(psql.param(46, 'TEXT')).toEqual("'46'");
-
-    expect(() => psql.param('hello world', 'inexistent sql type')).toThrowError();
-    expect(() => psql.param()).toThrowError();
-
-})
-
-test('(SelectObject)', () => {
-
-    const demoObject = {
-        name: 'John'
-    }
-
-    const demoObject2 = {
-        id: 5,
-        name: 'Rose'
-    }
-
-    const errorObject = {
-        inexistentColumn: 10
-    }
-
-    expect(psql.selectObject(testTable, demoObject)).toEqual("SELECT * FROM testTable WHERE name = 'John'");
-    expect(psql.selectObject(testTable, demoObject2)).toEqual("SELECT * FROM testTable WHERE id = 5 AND name = 'Rose'");
-
-    expect(() => psql.selectObject()).toThrowError();
-    expect(() => psql.selectObject(testTable, errorObject)).toThrowError();
-
-})

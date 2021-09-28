@@ -1,16 +1,21 @@
 import PowerSQL from "../src/powerSql";
-import psql from '../src/powerSqlDefaults';
 import { PowerSQLTable, PowerSQLTableColumn } from "../src/table";
 
 const testTable = new PowerSQLTable('testTable', [
     new PowerSQLTableColumn('id', 'INT', ['NOT NULL'])
 ])
 
-test('PowerSQL - Final', () => {
+test('PowerSQL', () => {
 
 
-    expect(PowerSQL(
-        psql.select('*'), psql.from(testTable), psql.where(psql.equal('id', psql.param(46)))
-    )).toEqual(`SELECT * FROM testTable WHERE id = 46;`);
+    const query = PowerSQL(
+        [ 'SELECT *' ],
+        [ 'FROM testTable' ], 
+        [ 'WHERE id = ? AND name = ?', [ 5, 'Test' ] ],
+        [ 'OR column = ?', [ false ] ]
+    );
+
+    expect(query).toEqual([`SELECT * FROM testTable WHERE id = ? AND name = ? OR column = ?;`, [5, 'Test', false]]);
+    
 
 });
