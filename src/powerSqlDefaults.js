@@ -12,6 +12,12 @@ function unifyStatements(statements, join = ' ') {
             sqls.push(condAsResult[0].trim());
             params.push(...condAsResult[1]);
         }
+        else if (typeof cond === 'object' &&
+            Array.isArray(cond) &&
+            cond.length === 1 &&
+            typeof cond[0] === 'string') {
+            sqls.push(cond[0].trim());
+        }
         else {
             throw new Error(`Unknown statement: ${cond}.`);
         }
